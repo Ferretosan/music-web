@@ -6,6 +6,7 @@
     <title>Ferretosan Music</title>
     <link rel ="stylesheet" href="style.css">
     <link rel="icon" href="favicon.png">
+    <style>@import url('https://fonts.googleapis.com/css2?family=Momo+Trust+Display&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');</style>
 </head>
 <body>
     <h1 align="center">Ferretosan Music</h1>
@@ -28,6 +29,10 @@
         </a>
     </div>
     <div class="albums">
+        <div class="album">
+            <iframe style="border: 0; width: 200px; height: 200px;" src="https://bandcamp.com/EmbeddedPlayer/track=1750631210/size=large/bgcol=333333/linkcol=9a64ff/minimal=true/transparent=true/" seamless><a href="https://ferretosan.bandcamp.com/track/night-bench">night bench by Ferretosan, PbToast14, Obscured by Crowds</a></iframe>
+            <span>night bench</span>
+        </div>
         <div class="album">
             <iframe style="border: 0; width: 200px; height: 200px;" src="https://bandcamp.com/EmbeddedPlayer/track=4110458480/size=large/bgcol=333333/linkcol=9a64ff/minimal=true/transparent=true/" seamless><a href="https://ferretosan.bandcamp.com/track/merry-go-round-silent-film-light-breakcore-remix">Merry Go Round - Silent Film Light (breakcore remix) by Ferretosan</a></iframe>
             <span>Merry Go Round - Silent Film Light (breakcore remix)</span>
@@ -56,7 +61,66 @@
     <div class="title-tooltip" style="position: absolute; background: rgba(0, 0, 0, 0.7); color: #fff; padding: 5px; border-radius: 3px; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.2s;"></div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const albumsContainer = document.querySelector('.albums');
             const titleSpans = document.querySelectorAll('.albums span');
+            
+            // Function to reorder albums if only one is on the bottom row
+            function reorderAlbumsIfNeeded() {
+                const albums = Array.from(albumsContainer.querySelectorAll('.album'));
+                if (albums.length < 2) return;
+                
+                // Get positions of all albums
+                const positions = albums.map(album => ({
+                    element: album,
+                    top: album.offsetTop,
+                    left: album.offsetLeft
+                }));
+                
+                // Group by rows (albums with same or very similar offsetTop are in the same row)
+                const rows = {};
+                positions.forEach(pos => {
+                    // Round to nearest 10px to handle minor positioning differences
+                    const roundedTop = Math.round(pos.top / 10) * 10;
+                    if (!rows[roundedTop]) {
+                        rows[roundedTop] = [];
+                    }
+                    rows[roundedTop].push(pos.element);
+                });
+                
+                // Sort rows by position
+                const rowArray = Object.keys(rows)
+                    .sort((a, b) => Number(a) - Number(b))
+                    .map(key => rows[key]);
+                
+                // Check if there's more than one row and the last row has only one album
+                if (rowArray.length > 1 && rowArray[rowArray.length - 1].length === 1) {
+                    // Find the row with the most albums (likely the first row)
+                    let sourceRow = rowArray[0];
+                    for (let i = 0; i < rowArray.length - 1; i++) {
+                        if (rowArray[i].length > sourceRow.length) {
+                            sourceRow = rowArray[i];
+                        }
+                    }
+                    
+                    // Only proceed if source row has more than 1 album
+                    if (sourceRow.length > 1) {
+                        const lastAlbum = sourceRow[sourceRow.length - 1];
+                        const singleAlbum = rowArray[rowArray.length - 1][0];
+                        
+                        // Insert the last album from the source row before the single album
+                        albumsContainer.insertBefore(lastAlbum, singleAlbum);
+                    }
+                }
+            }
+            
+            // Run with a slight delay to ensure layout is calculated
+            setTimeout(reorderAlbumsIfNeeded, 100);
+            
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(reorderAlbumsIfNeeded, 100);
+            });
             
             titleSpans.forEach(span => {
                 const fullText = span.textContent.trim();
